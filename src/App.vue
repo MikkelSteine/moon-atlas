@@ -1,14 +1,14 @@
 <template>
-  <MoonView />
+  <MainView/>
 </template>
 
 <script>
-import MoonView from './components/MoonView.vue'
+import MainView from "@/components/MainWindow";
 
 export default {
   name: 'App',
   components: {
-    MoonView
+    MainView
   }
 }
 </script>
