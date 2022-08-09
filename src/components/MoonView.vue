@@ -62,6 +62,8 @@ const createMesh = () => {
   return new THREE.Mesh(tgeometry, material);
 };
 */
+
+// eslint-disable-next-line no-unused-vars
 const loadMoon20 = (scene, objLoader) => {
   for (let x = 1; x < 30; x++) {
     objLoader.load(`/moon20_${x}.obj`, (root) => {
@@ -72,17 +74,14 @@ const loadMoon20 = (scene, objLoader) => {
 
 const loadMoon20normal = (scene, objLoader) => {
   for (let x = 1; x < 30; x++) {
-    objLoader.load(`/moon20n_${x}.obj`, (root) => {
-      scene.add(root);
-    });
+    loadObject(scene, objLoader, `moon20n_${x}.obj`);
   }
 }
 
+// eslint-disable-next-line no-unused-vars
 const loadMoon100 = (scene, objLoader) => {
   for (let x = 1; x < 9; x++) {
-    objLoader.load(`/moon100_${x}.obj`, (root) => {
-      scene.add(root);
-    });
+    loadObject(scene, objLoader, `moon100_${x}.obj`);
   }
 }
 
@@ -147,8 +146,8 @@ export default {
 
     const objLoader = new OBJLoader();
 
-    loadMoon20(scene, objLoader);
-    //loadMoon20normal(scene, objLoader);
+    //loadMoon20(scene, objLoader);
+    loadMoon20normal(scene, objLoader);
     //loadMoon100(scene, objLoader);
     //loadObject(scene, objLoader, 'moon1000_1.obj');
     //loadObject(scene, objLoader, 'Low_Poly_Planet_001.obj');
