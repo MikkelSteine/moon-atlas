@@ -7,113 +7,57 @@ import * as THREE from 'three';
 import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls.js';
 import {OBJLoader} from 'three/examples/jsm/loaders/OBJLoader.js';
 
-let scene, camera, renderer;
-// const material = new THREE.MeshNormalMaterial();
+let scene, camera, renderer, moon = [];
 
 function animate() {
   requestAnimationFrame(animate);
 
-//tmesh.rotation.x += 0.02;
-//  tmesh.rotation.y += 0.01;
- // mesh.rotation.y += 0.02;
+//  if (moon) {
+//    moon.map(part => part.rotation.y += 0.0005);
+//  }
 
   renderer.render(scene, camera);
 }
 
-/*
-const createMesh = () => {
-  const geometry = new THREE.BufferGeometry();
-// create a simple square shape. We duplicate the top left and bottom right
-// vertices because each vertex needs to appear once per triangle.
-  const vertices = new Float32Array( [
-    -0.2, -0.2,  0.2,
-    0.2, -0.2,  0.2,
-    0.2,  0.2,  0.2,
-
-    0.2,  0.2,  0.2,
-    -0.2,  0.2,  0.2,
-    -0.2, -0.2,  0.2
-  ] );
-
-// itemSize = 3 because there are 3 values (components) per vertex
-  geometry.setAttribute( 'position', new THREE.BufferAttribute( vertices, 3 ) );
-  //const material = new THREE.MeshBasicMaterial( { color: 0xff0000 } );
-  const mesh = new THREE.Mesh( geometry, material );
-  return mesh;
-
-  const vertices = [
-    new THREE.Vector3(-1.0, 1.5, 0.95),
-    new THREE.Vector3(-1.0, -1.5, 0.95),
-    new THREE.Vector3(1.0, -1.5, 0.95),
-    new THREE.Vector3(-1.0, 1.5, 1.2),
-    new THREE.Vector3(-1.0, -1.5, 1.2),
-    new THREE.Vector3(1.0, -1.5, 1.2),
-  ];
-  const holes = [];
-  const tgeometry = new THREE.BoxGeometry(1, 1, 1);
-
-  tgeometry.vertices = vertices;
-  const triangles = THREE.ShapeUtils.triangulateShape(vertices, holes);
-  console.log(triangles);
-  const normal = new THREE.Vector3( 0, 0, 1 );
-  const color = new THREE.Color( 0xffaa00 );
-  tgeometry.faces = triangles.map(t => new THREE.Vector3(t[0], t[1], t[2], normal, color));
-  return new THREE.Mesh(tgeometry, material);
-};
-*/
-
 // eslint-disable-next-line no-unused-vars
 const loadMoon20 = (scene, objLoader) => {
+  moon = [];
   for (let x = 1; x < 30; x++) {
-    objLoader.load(`/moon20_${x}.obj`, (root) => {
-      scene.add(root);
-    });
+    loadObject(scene, objLoader, `moon20_${x}.obj`, moon);
   }
 }
 
-const loadMoon20normal = (scene, objLoader) => {
+const loadMoon20normal = async (scene, objLoader) => {
+  moon = [];
   for (let x = 1; x < 30; x++) {
-    loadObject(scene, objLoader, `moon20n_${x}.obj`);
+    await loadObject(scene, objLoader, `moon20n_${x}.obj`, moon);
   }
 }
 
 // eslint-disable-next-line no-unused-vars
 const loadMoon100 = (scene, objLoader) => {
+  moon = [];
   for (let x = 1; x < 9; x++) {
-    loadObject(scene, objLoader, `moon100_${x}.obj`);
+    loadObject(scene, objLoader, `moon100_${x}.obj`, moon);
   }
 }
 
-const loadObject = (scene, objLoader, fileName) => {
-  objLoader.load('/obj/' + fileName, (root) => {
-    scene.add(root);
+const loadObject = async (scene, objLoader, fileName, loadTo) => {
+  objLoader.load('/obj/' + fileName, async (root) => {
+    await scene.add(root);
+    if (loadTo) {
+      loadTo.push(root);
+    }
   });
 }
 
 export default {
   props: {},
-  mounted() {
+  async mounted() {
     camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.01, 200);
     camera.position.z = 50;
 
     scene = new THREE.Scene();
-
-/*    const geometry = new THREE.BoxGeometry(2, 2, 2);
-    //const material = new THREE.MeshBasicMaterial( { color: 0x004070 } );
-    mesh = new THREE.Mesh(geometry, material);
-    mesh.rotateX(0.5);
-    mesh.rotateY(0.5);
-    scene.add(mesh);*/
-/*
-    tmesh = createMesh();
-    tmesh.rotateX(0.5);
-    tmesh.rotateY(0.5);
-    scene.add(tmesh);
-*/
-/*        const sphereGeometry = new THREE.SphereGeometry(0.4, 32, 16);
-    sphereMesh = new THREE.Mesh(sphereGeometry, material);
-    scene.add(sphereMesh);
-*/
 
     {
       const color = 0xFFFFFF;
@@ -124,15 +68,6 @@ export default {
       scene.add(light);
       scene.add(light.target);
     }
-/*    {
-      const color = 0x0080ff;
-      const intensity = 0.4;
-      const light = new THREE.DirectionalLight(color, intensity);
-      light.position.set(0, 20, -100);
-      light.target.position.set(0, 0, 0);
-      scene.add(light);
-      scene.add(light.target);
-    }*/
 /*    {
       const color = 0x80a0f0;
       const intensity = 0.1;
@@ -146,13 +81,20 @@ export default {
     const objLoader = new OBJLoader();
 
     //loadMoon20(scene, objLoader);
-    loadMoon20normal(scene, objLoader);
+    await loadMoon20normal(scene, objLoader);
     //loadMoon100(scene, objLoader);
     //loadObject(scene, objLoader, 'moon1000_1.obj');
     //loadObject(scene, objLoader, 'Low_Poly_Planet_001.obj');
 
     renderer = new THREE.WebGLRenderer({antialias: true});
     renderer.setSize(window.innerWidth, window.innerHeight);
+
+    window.onresize = () => {
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.render(scene, camera);
+    }
 
     const moonview = document.getElementById('moonview');
     if (moonview) {
