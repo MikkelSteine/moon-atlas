@@ -9,6 +9,7 @@ import {OBJLoader} from 'three/examples/jsm/loaders/OBJLoader.js';
 
 let scene, camera, renderer, moon = [];
 
+// eslint-disable-next-line no-unused-vars
 function animate() {
   requestAnimationFrame(animate);
 
@@ -51,6 +52,22 @@ const loadObject = async (scene, objLoader, fileName, loadTo) => {
   });
 }
 
+const addLight = (color, intensity, position, target = [0,0,0]) => {
+  let light;
+  if (!position || position.length !== 3) {
+    light = new THREE.AmbientLight(color, intensity)
+    scene.add(light);
+  } else {
+    light = new THREE.DirectionalLight(color, intensity);
+    light.position.set(...position);
+    light.target.position.set(...target);
+    scene.add(light);
+    scene.add(light.target);
+  }
+
+  return light;
+}
+
 export default {
   props: {},
   async mounted() {
@@ -59,24 +76,9 @@ export default {
 
     scene = new THREE.Scene();
 
-    {
-      const color = 0xFFFFFF;
-      const intensity = 0.7;
-      const light = new THREE.DirectionalLight(color, intensity);
-      light.position.set(100, 0, 100);
-      light.target.position.set(0, 0, 0);
-      scene.add(light);
-      scene.add(light.target);
-    }
-/*    {
-      const color = 0x80a0f0;
-      const intensity = 0.1;
-      const light = new THREE.AmbientLight(color, intensity)
-      //      light.position.set(0, 20, -100);
-      //light.target.position.set(0, 0, 0);
-      scene.add(light);
-      //scene.add(light.target);
-    }*/
+    addLight(0xFFFFFF, 0.7, [100, 0, 100]);
+    addLight(0xFFfa80, 0.2, [-100, 0, -100]);
+    addLight(0xFFFFFF, 0.1);
 
     const objLoader = new OBJLoader();
 
