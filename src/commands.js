@@ -1,1 +1,2 @@
 export const CMD_RESET = 'CMD_RESET';
+export const CMD_CHANGE_TEXTURE = 'CMD_CHANGE_TEXTURE';

@@ -6,6 +6,14 @@
 import * as THREE from 'three';
 import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls.js';
 import {OBJLoader} from 'three/examples/jsm/loaders/OBJLoader.js';
+import {
+  TEXTURE_ALBEDO,
+  TEXTURE_ALTITUDE,
+  TEXTURE_GEOLOGICAL,
+  TEXTURE_ROCKTYPES,
+  TEXTURE_USGS,
+  TEXTURE_WATER
+} from "@/textures";
 
 let scene, camera, renderer, controls, moon = [], moonMaterial;
 
@@ -18,14 +26,6 @@ function animate() {
 //  }
 
   renderer.render(scene, camera);
-}
-
-// eslint-disable-next-line no-unused-vars
-const loadMoon20 = (scene, objLoader) => {
-  moon = [];
-  for (let x = 1; x < 30; x++) {
-    loadObject(scene, objLoader, `moon20_${x}.obj`, moonMaterial, moon);
-  }
 }
 
 const loadMoon20normal = async (scene, objLoader) => {
@@ -45,7 +45,6 @@ const loadMoon100 = (scene, objLoader) => {
 
 const loadObject = async (scene, objLoader, fileName, material, loadTo) => {
   objLoader.load('/obj/' + fileName, async (object) => {
-    console.log(object);
     object.traverse( function (child) {
       if (material && child instanceof THREE.Mesh) {
         child.material = moonMaterial;
@@ -56,10 +55,10 @@ const loadObject = async (scene, objLoader, fileName, material, loadTo) => {
     if (loadTo) {
       loadTo.push(object);
     }
-  },
+  }/*,
   function ( xhr ) {
-    console.log( fileName + ' ' + Number(xhr.loaded / xhr.total * 100 ).toFixed(1) + '% loaded' );
-  });
+    //console.log( fileName + ' ' + Number(xhr.loaded / xhr.total * 100 ).toFixed(1) + '% loaded' );
+  }*/);
 }
 
 const addLight = (color, intensity, position, target = [0,0,0]) => {
@@ -78,19 +77,52 @@ const addLight = (color, intensity, position, target = [0,0,0]) => {
   return light;
 }
 
+const getTextureFilepath = (texture) => {
+  switch (texture) {
+    case TEXTURE_ALBEDO:
+      return '/textures/moon-albedo.png';
+    case TEXTURE_WATER:
+      return '/textures/moon-water.jpeg';
+    case TEXTURE_ROCKTYPES:
+      return '/textures/moon-usgs.jpeg';
+    case TEXTURE_USGS:
+      return '/textures/moon-usgs.jpeg';
+    case TEXTURE_GEOLOGICAL:
+      return '/textures/moon-geological.jpeg';
+    case TEXTURE_ALTITUDE:
+      return '/textures/moon-altitude.jpeg';
+    default:
+      return undefined;
+  }
+}
+
 export default {
   props: {},
   methods: {
     resetView () {
       controls.reset();
+    },
+    setTexture (texture) {
+      const textureFile = getTextureFilepath(texture);
+      if (textureFile) {
+        moonMaterial.map = this.textureLoader.load(textureFile);
+        moonMaterial.needsUpdate = true;
+/*        moon.map((segment) => {
+          segment.traverse((child) => {
+            if (child instanceof THREE.Mesh) {
+              child.material.needsUpdate
+            }
+          });
+        });*/
+      }
     }
   },
   async mounted() {
     camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.01, 200);
     camera.position.z = 50;
 
-    const textureLoader = new THREE.TextureLoader();
-    moonMaterial = new THREE.MeshPhongMaterial({ color: 0xffffff, map: textureLoader.load('/textures/moon-albedo.png') });
+    this.textureLoader = new THREE.TextureLoader();
+    moonMaterial = new THREE.MeshPhongMaterial({ color: 0xffffff, map: this.textureLoader.load('/textures/moon-albedo.png') });
 
     scene = new THREE.Scene();
 
