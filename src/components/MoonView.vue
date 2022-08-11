@@ -7,7 +7,7 @@ import * as THREE from 'three';
 import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls.js';
 import {OBJLoader} from 'three/examples/jsm/loaders/OBJLoader.js';
 
-let scene, camera, renderer, moon = [];
+let scene, camera, renderer, controls, moon = [];
 
 // eslint-disable-next-line no-unused-vars
 function animate() {
@@ -70,6 +70,11 @@ const addLight = (color, intensity, position, target = [0,0,0]) => {
 
 export default {
   props: {},
+  methods: {
+    resetView () {
+      controls.reset();
+    }
+  },
   async mounted() {
     camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.01, 200);
     camera.position.z = 50;
@@ -100,7 +105,7 @@ export default {
 
     const moonview = document.getElementById('moonview');
     if (moonview) {
-      const controls = new OrbitControls(camera, moonview);
+      controls = new OrbitControls(camera, moonview);
       controls.target.set(0, 0, 0);
       controls.update();
 

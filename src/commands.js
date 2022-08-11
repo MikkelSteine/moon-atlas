@@ -1,0 +1,1 @@
+export const CMD_RESET = 'CMD_RESET';
