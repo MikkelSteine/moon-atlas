@@ -84,7 +84,7 @@ const getTextureFilepath = (texture) => {
     case TEXTURE_WATER:
       return '/textures/moon-water.jpeg';
     case TEXTURE_ROCKTYPES:
-      return '/textures/moon-usgs.jpeg';
+      return '/textures/moon-rocktypes.jpeg';
     case TEXTURE_USGS:
       return '/textures/moon-usgs.jpeg';
     case TEXTURE_GEOLOGICAL:
@@ -107,14 +107,21 @@ export default {
       if (textureFile) {
         moonMaterial.map = this.textureLoader.load(textureFile);
         moonMaterial.needsUpdate = true;
-/*        moon.map((segment) => {
-          segment.traverse((child) => {
-            if (child instanceof THREE.Mesh) {
-              child.material.needsUpdate
-            }
-          });
-        });*/
       }
+    },
+    changeMaterial (options) {
+      if (options.shiny) {
+        moonMaterial.shininess = 30;
+      } else {
+        moonMaterial.shininess = 0;
+      }
+
+      if (options.flat) {
+        moonMaterial.emissiveIntensity = 0.3;
+      } else {
+        moonMaterial.emissiveIntensity = 0;
+      }
+      moonMaterial.needsUpdate = true;
     }
   },
   async mounted() {
@@ -122,12 +129,17 @@ export default {
     camera.position.z = 50;
 
     this.textureLoader = new THREE.TextureLoader();
-    moonMaterial = new THREE.MeshPhongMaterial({ color: 0xffffff, map: this.textureLoader.load('/textures/moon-albedo.png') });
+    moonMaterial = new THREE.MeshPhongMaterial({
+      shininess: 0,
+      emissive: 0xffffff,
+      emissiveIntensity: 0,
+      map: this.textureLoader.load('/textures/moon-albedo.png')
+    });
 
     scene = new THREE.Scene();
 
     addLight(0xFFFFFF, 1, [100, 0, 100]);
-    addLight(0xFFfa80, 0.2, [-100, 0, -100]);
+    addLight(0xFFfa80, 0.4, [-100, 0, -100]);
     addLight(0xFFFFFF, 0.1);
 
     const objLoader = new OBJLoader();

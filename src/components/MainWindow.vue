@@ -6,7 +6,7 @@
 <script>
 import MoonView from '@/components/MoonView.vue'
 import ViewControls from "@/components/ViewControls";
-import {CMD_CHANGE_TEXTURE, CMD_RESET} from "@/commands";
+import {CMD_CHANGE_MATERIAL, CMD_CHANGE_TEXTURE, CMD_RESET} from "@/commands";
 
 export default {
   name: 'MainView',
@@ -15,13 +15,16 @@ export default {
     ViewControls
   },
   methods: {
-    handleCommand(command, data) {
+    handleCommand(command, options) {
       switch (command) {
         case CMD_RESET:
           this.$refs.moonView.resetView();
           break;
         case CMD_CHANGE_TEXTURE:
-          this.$refs.moonView.setTexture(data);
+          this.$refs.moonView.setTexture(options);
+          break;
+        case CMD_CHANGE_MATERIAL:
+          this.$refs.moonView.changeMaterial(options);
           break;
         default:
           console.error(`Unknown commant: ${command}`);
