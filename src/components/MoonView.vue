@@ -7,7 +7,7 @@ import * as THREE from 'three';
 import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls.js';
 import {OBJLoader} from 'three/examples/jsm/loaders/OBJLoader.js';
 
-let scene, camera, renderer, controls, moon = [];
+let scene, camera, renderer, controls, moon = [], moonMaterial;
 
 // eslint-disable-next-line no-unused-vars
 function animate() {
@@ -24,14 +24,14 @@ function animate() {
 const loadMoon20 = (scene, objLoader) => {
   moon = [];
   for (let x = 1; x < 30; x++) {
-    loadObject(scene, objLoader, `moon20_${x}.obj`, moon);
+    loadObject(scene, objLoader, `moon20_${x}.obj`, moonMaterial, moon);
   }
 }
 
 const loadMoon20normal = async (scene, objLoader) => {
   moon = [];
   for (let x = 1; x < 30; x++) {
-    await loadObject(scene, objLoader, `moon20n_${x}.obj`, moon);
+    await loadObject(scene, objLoader, `moon20n_${x}.obj`, moonMaterial, moon);
   }
 }
 
@@ -39,16 +39,26 @@ const loadMoon20normal = async (scene, objLoader) => {
 const loadMoon100 = (scene, objLoader) => {
   moon = [];
   for (let x = 1; x < 9; x++) {
-    loadObject(scene, objLoader, `moon100_${x}.obj`, moon);
+    loadObject(scene, objLoader, `moon100_${x}.obj`, moonMaterial, moon);
   }
 }
 
-const loadObject = async (scene, objLoader, fileName, loadTo) => {
-  objLoader.load('/obj/' + fileName, async (root) => {
-    await scene.add(root);
+const loadObject = async (scene, objLoader, fileName, material, loadTo) => {
+  objLoader.load('/obj/' + fileName, async (object) => {
+    console.log(object);
+    object.traverse( function (child) {
+      if (material && child instanceof THREE.Mesh) {
+        child.material = moonMaterial;
+        child.material.needsUpdate = true;
+      }
+    });
+    await scene.add(object);
     if (loadTo) {
-      loadTo.push(root);
+      loadTo.push(object);
     }
+  },
+  function ( xhr ) {
+    console.log( fileName + ' ' + Number(xhr.loaded / xhr.total * 100 ).toFixed(1) + '% loaded' );
   });
 }
 
@@ -79,9 +89,12 @@ export default {
     camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.01, 200);
     camera.position.z = 50;
 
+    const textureLoader = new THREE.TextureLoader();
+    moonMaterial = new THREE.MeshPhongMaterial({ color: 0xffffff, map: textureLoader.load('/textures/moon-albedo.png') });
+
     scene = new THREE.Scene();
 
-    addLight(0xFFFFFF, 0.7, [100, 0, 100]);
+    addLight(0xFFFFFF, 1, [100, 0, 100]);
     addLight(0xFFfa80, 0.2, [-100, 0, -100]);
     addLight(0xFFFFFF, 0.1);
 
