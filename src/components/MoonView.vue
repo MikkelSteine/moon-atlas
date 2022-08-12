@@ -4,83 +4,41 @@
 
 <script>
 import * as THREE from 'three';
-import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls.js';
-import {OBJLoader} from 'three/examples/jsm/loaders/OBJLoader.js';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
 import {
   TEXTURE_ALBEDO,
-  TEXTURE_ALTITUDE,
-  TEXTURE_GEOLOGICAL,
+  TEXTURE_ALTITUDE, TEXTURE_CLEMENTINECOLOR, TEXTURE_CRUSTTHICKNESS,
+  TEXTURE_GEOLOGICAL, TEXTURE_IRON, TEXTURE_REALCOLOR,
   TEXTURE_ROCKTYPES,
   TEXTURE_USGS,
   TEXTURE_WATER
 } from "@/textures";
-
-let scene, camera, renderer, controls, moon = [], moonMaterial;
-
-// eslint-disable-next-line no-unused-vars
-function animate() {
-  requestAnimationFrame(animate);
-
-//  if (moon) {
-//    moon.map(part => part.rotation.y += 0.0005);
-//  }
-
-  renderer.render(scene, camera);
-}
-
-const loadMoon20normal = async (scene, objLoader) => {
-  moon = [];
-  for (let x = 1; x < 30; x++) {
-    await loadObject(scene, objLoader, `moon20n_${x}.obj`, moonMaterial, moon);
-  }
-}
+import {loadMoon100, loadMoon20normal} from "@/moduleLoader";
 
 // eslint-disable-next-line no-unused-vars
-const loadMoon100 = (scene, objLoader) => {
-  moon = [];
-  for (let x = 1; x < 9; x++) {
-    loadObject(scene, objLoader, `moon100_${x}.obj`, moonMaterial, moon);
-  }
-}
-
-const loadObject = async (scene, objLoader, fileName, material, loadTo) => {
-  objLoader.load('/obj/' + fileName, async (object) => {
-    object.traverse( function (child) {
-      if (material && child instanceof THREE.Mesh) {
-        child.material = moonMaterial;
-        child.material.needsUpdate = true;
-      }
-    });
-    await scene.add(object);
-    if (loadTo) {
-      loadTo.push(object);
+const cleanMaterial = (material) => {
+  console.log('dispose material!')
+  // dispose textures
+  for (const key of Object.keys(material)) {
+    const value = material[key]
+    if (value && typeof value === 'object' && 'minFilter' in value) {
+      console.log('dispose texture! ' + key)
+      value.dispose();
     }
-  }/*,
-  function ( xhr ) {
-    //console.log( fileName + ' ' + Number(xhr.loaded / xhr.total * 100 ).toFixed(1) + '% loaded' );
-  }*/);
-}
-
-const addLight = (color, intensity, position, target = [0,0,0]) => {
-  let light;
-  if (!position || position.length !== 3) {
-    light = new THREE.AmbientLight(color, intensity)
-    scene.add(light);
-  } else {
-    light = new THREE.DirectionalLight(color, intensity);
-    light.position.set(...position);
-    light.target.position.set(...target);
-    scene.add(light);
-    scene.add(light.target);
   }
-
-  return light;
+  material.dispose();
+  material = undefined;
 }
 
 const getTextureFilepath = (texture) => {
   switch (texture) {
     case TEXTURE_ALBEDO:
       return '/textures/moon-albedo.png';
+    case TEXTURE_REALCOLOR:
+      return '/textures/moon-realcolors.jpeg';
+    case TEXTURE_CLEMENTINECOLOR:
+      return '/textures/moon-clementinecolors.jpeg';
     case TEXTURE_WATER:
       return '/textures/moon-water.jpeg';
     case TEXTURE_ROCKTYPES:
@@ -91,6 +49,10 @@ const getTextureFilepath = (texture) => {
       return '/textures/moon-geological.jpeg';
     case TEXTURE_ALTITUDE:
       return '/textures/moon-altitude.jpeg';
+    case TEXTURE_CRUSTTHICKNESS:
+      return '/textures/moon-grail-crustalthickness.jpeg';
+    case TEXTURE_IRON:
+      return '/textures/moon-iron.jpeg';
     default:
       return undefined;
   }
@@ -100,76 +62,130 @@ export default {
   props: {},
   methods: {
     resetView () {
-      controls.reset();
+      this.controls.reset();
     },
     setTexture (texture) {
       const textureFile = getTextureFilepath(texture);
       if (textureFile) {
-        moonMaterial.map = this.textureLoader.load(textureFile);
-        moonMaterial.needsUpdate = true;
+        this.moonMaterial.map = this.textureLoader.load(textureFile);
+        this.moonMaterial.needsUpdate = true;
       }
     },
     changeMaterial (options) {
       if (options.shiny) {
-        moonMaterial.shininess = 30;
+        this.moonMaterial.shininess = 30;
       } else {
-        moonMaterial.shininess = 0;
+        this.moonMaterial.shininess = 0;
       }
 
       if (options.flat) {
-        moonMaterial.emissiveIntensity = 0.3;
+        this.moonMaterial.emissiveIntensity = 0.4;
       } else {
-        moonMaterial.emissiveIntensity = 0;
+        this.moonMaterial.emissiveIntensity = 0;
       }
-      moonMaterial.needsUpdate = true;
+      this.moonMaterial.needsUpdate = true;
+    },
+    addLight(color, intensity, position, target = [0,0,0]) {
+      let light;
+      if (!position || position.length !== 3) {
+        light = new THREE.AmbientLight(color, intensity)
+        this.scene.add(light);
+      } else {
+        light = new THREE.DirectionalLight(color, intensity);
+        light.position.set(...position);
+        light.target.position.set(...target);
+        this.scene.add(light);
+        this.scene.add(light.target);
+      }
+
+      return light;
+    },
+    loadMoonModelsAtResolution(resolution) {
+      if (this.moon && this.moon.length > 0) {
+        const scene = this.scene;
+        this.moon.forEach((object) => {
+          object.traverse( function (child) {
+            if (!child.isMesh) return;
+            scene.remove(child);
+            child.geometry.dispose();
+/*            if (child.material.isMaterial) {
+              cleanMaterial(child)
+            } else {
+              // an array of materials
+              for (const material of child.material) cleanMaterial(material)
+            }*/
+            child.geometry = undefined;
+            child = undefined;
+          });
+          this.scene.remove(object);
+          object = undefined;
+        });
+      }
+      this.moon = [];
+      if (resolution === 'high') {
+        loadMoon20normal(this.scene, this.objLoader, this.moonMaterial, this.moon);
+      } else {
+        loadMoon100(this.scene, this.objLoader, this.moonMaterial, this.moon);
+      }
+    },
+    createMoonMaterial() {
+      this.textureLoader = new THREE.TextureLoader();
+      return new THREE.MeshPhongMaterial({
+        shininess: 0,
+        emissive: 0x404040,
+        emissiveIntensity: 0,
+        map: this.textureLoader.load(getTextureFilepath(TEXTURE_ALBEDO))
+      });
+    },
+    onViewResize() {
+      this.renderer.setSize(window.innerWidth, window.innerHeight);
+      this.camera.aspect = window.innerWidth / window.innerHeight;
+      this.camera.updateProjectionMatrix();
+      this.renderer.render(this.scene, this.camera);
+    },
+    animate() {
+      requestAnimationFrame(this.animate);
+
+    //  if (moon) {
+    //    moon.map(part => part.rotation.y += 0.0005);
+    //  }
+
+      this.renderer.render(this.scene, this.camera);
     }
   },
   async mounted() {
-    camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.01, 200);
-    camera.position.z = 50;
+    this.camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.01, 200);
+    this.camera.position.z = 50;
 
-    this.textureLoader = new THREE.TextureLoader();
-    moonMaterial = new THREE.MeshPhongMaterial({
-      shininess: 0,
-      emissive: 0xffffff,
-      emissiveIntensity: 0,
-      map: this.textureLoader.load('/textures/moon-albedo.png')
-    });
+    this.moonMaterial = this.createMoonMaterial();
 
-    scene = new THREE.Scene();
+    this.scene = new THREE.Scene();
 
-    addLight(0xFFFFFF, 1, [100, 0, 100]);
-    addLight(0xFFfa80, 0.4, [-100, 0, -100]);
-    addLight(0xFFFFFF, 0.1);
+    this.addLight(0xFFFFFF, 1, [100, 0, 100]);
+    this.addLight(0xFFfa80, 0.4, [-100, 0, -100]);
+    this.addLight(0xFFFFFF, 0.1);
 
-    const objLoader = new OBJLoader();
+    this.objLoader = new OBJLoader();
 
-    //loadMoon20(scene, objLoader);
-    await loadMoon20normal(scene, objLoader);
-    //loadMoon100(scene, objLoader);
+    this.loadMoonModelsAtResolution('low');
     //loadObject(scene, objLoader, 'moon1000_1.obj');
     //loadObject(scene, objLoader, 'Low_Poly_Planet_001.obj');
 
-    renderer = new THREE.WebGLRenderer({antialias: true});
-    renderer.setSize(window.innerWidth, window.innerHeight);
+    this.renderer = new THREE.WebGLRenderer({antialias: true});
+    this.renderer.setSize(window.innerWidth, window.innerHeight);
 
-    window.onresize = () => {
-      renderer.setSize(window.innerWidth, window.innerHeight);
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.render(scene, camera);
-    }
+    window.onresize = this.onViewResize;
 
-    const moonview = document.getElementById('moonview');
-    if (moonview) {
-      controls = new OrbitControls(camera, moonview);
-      controls.target.set(0, 0, 0);
-      controls.update();
+    this.moonview = document.getElementById('moonview');
+    if (this.moonview) {
+      this.controls = new OrbitControls(this.camera, this.moonview);
+      this.controls.target.set(0, 0, 0);
+      this.controls.update();
 
-      moonview.appendChild(renderer.domElement);
-      renderer.render(scene, camera);
+      this.moonview.appendChild(this.renderer.domElement);
+      this.renderer.render(this.scene, this.camera);
 
-      animate();
+      this.animate();
     }
   }
 }

@@ -6,7 +6,7 @@
 <script>
 import MoonView from '@/components/MoonView.vue'
 import ViewControls from "@/components/ViewControls";
-import {CMD_CHANGE_MATERIAL, CMD_CHANGE_TEXTURE, CMD_RESET} from "@/commands";
+import {CMD_CHANGE_MATERIAL, CMD_CHANGE_RESOLUTION, CMD_CHANGE_TEXTURE, CMD_RESET} from "@/commands";
 
 export default {
   name: 'MainView',
@@ -25,6 +25,9 @@ export default {
           break;
         case CMD_CHANGE_MATERIAL:
           this.$refs.moonView.changeMaterial(options);
+          break;
+        case CMD_CHANGE_RESOLUTION:
+          this.$refs.moonView.loadMoonModelsAtResolution(options);
           break;
         default:
           console.error(`Unknown commant: ${command}`);
