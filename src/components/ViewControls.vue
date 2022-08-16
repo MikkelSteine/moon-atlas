@@ -20,13 +20,15 @@
       <button @click="setProperty('outlines', !outlines)" class="toggle-button" :class="{on: outlines}">
         Outlines {{ outlines ? 'on' : 'off' }}
       </button>-->
-      <button @click="rotate(-0.1)" class="toggle-button" :class="{on: rotating}">
+      <button @click="rotate(-0.1)">
         <font-awesome-icon icon="fa-solid fa-rotate-right" />
       </button>
-      <button @click="setProperty('rotating', !rotating)" class="toggle-button" :class="{on: rotating}">
-        <font-awesome-icon icon="fa-solid fa-arrows-spin" /> {{ rotating ? 'on' : 'off' }}
+      <button @click="setProperty('rotating', !rotating)">
+        <!--<font-awesome-icon icon="fa-solid fa-arrows-spin" />&nbsp;-->
+        <font-awesome-icon v-if="rotating" icon="fa-solid fa-pause" />
+        <font-awesome-icon v-if="!rotating" icon="fa-solid fa-play" />
       </button>
-      <button @click="rotate(0.1)" class="toggle-button" :class="{on: rotating}">
+      <button @click="rotate(0.1)">
         <font-awesome-icon icon="fa-solid fa-rotate-left" />
       </button>
     </div>

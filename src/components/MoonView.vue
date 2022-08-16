@@ -8,7 +8,6 @@
 <script>
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-//import { CSS3DObject, CSS3DRenderer } from 'three/examples/jsm/renderers/CSS3DRenderer.js';
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
 import {
   TEXTURE_ALBEDO,
@@ -18,7 +17,6 @@ import {
   TEXTURE_USGS,
   TEXTURE_WATER
 } from "@/textures";
-//import {FontLoader} from "three/examples/jsm/loaders/FontLoader";
 import { Text } from 'troika-three-text';
 
 // eslint-disable-next-line no-unused-vars
