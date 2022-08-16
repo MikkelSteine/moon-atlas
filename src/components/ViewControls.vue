@@ -7,14 +7,21 @@
       <button @click="changeResolution" class="toggle-button" :class="{on: resolution}">{{resolution ? 'Low res.' : 'Higher res.'}}</button>
     </div -->
     <div class="group">
-      <button @click="changeShininess" class="toggle-button" :class="{on: shiny}">Shinyness is
-        {{ shiny ? 'on' : 'off' }}
+      <button @click="changeShininess" class="toggle-button" :class="{on: shiny}">
+        Shiny {{ shiny ? 'on' : 'off' }}
       </button>
-      <button @click="changeFlatness" class="toggle-button" :class="{on: flat}">Flatness is {{ flat ? 'on' : 'off' }}
+      <button @click="changeFlatness" class="toggle-button" :class="{on: flat}">
+        Backlight {{ flat ? 'on' : 'off' }}
+      </button>
+      <button @click="toggleLabels" class="toggle-button" :class="{on: labels}">
+        Labels {{ labels ? 'on' : 'off' }}
+      </button>
+      <button @click="toggleOutlines" class="toggle-button" :class="{on: outlines}">
+        Outlines {{ outlines ? 'on' : 'off' }}
       </button>
     </div>
     <div class="group">
-      <label for="texture">Choose overlay:</label>
+      <label for="texture">Overlay:</label>
       <select name="texture" v-model="texture">
         <option v-for="option in optionsTexture" :value="option.value" v-bind:key=option.value>{{
             option.text
@@ -30,7 +37,7 @@ import {
   CMD_CHANGE_MATERIAL,
   CMD_CHANGE_RESOLUTION,
   CMD_CHANGE_TEXTURE,
-  CMD_RESET
+  CMD_RESET, CMD_TOGGLE_LABELS, CMD_TOGGLE_OUTLINES
 } from '@/commands';
 import {
   TEXTURE_ALBEDO,
@@ -63,6 +70,8 @@ export default {
       highres: false,
       shiny: false,
       flat: false,
+      labels: true,
+      outlines: false,
     }
   },
   methods: {
@@ -80,6 +89,14 @@ export default {
     changeFlatness() {
       this.flat = !this.flat;
       this.emitUpdateMaterial();
+    },
+    toggleLabels() {
+      this.labels = !this.labels;
+      this.$emit('view-command', CMD_TOGGLE_LABELS, this.labels);
+    },
+    toggleOutlines() {
+      this.outlines = !this.outlines;
+      this.$emit('view-command', CMD_TOGGLE_OUTLINES, this.outlines);
     },
     emitUpdateMaterial() {
       this.$emit('view-command', CMD_CHANGE_MATERIAL, {
@@ -109,14 +126,16 @@ export default {
 
   .group {
     color: white;
-    background: rgba(80, 80, 200, 0.4);
+    background: rgba(40, 40, 120, 0.6);
     font-weight: bold;
     font-family: sans-serif;
     border: 1px solid rgba(100, 100, 255, 0.8);
-    padding: 10px 20px;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(150, 150, 255, 1);
+    padding: 10px 10px;
     display: flex;
     flex-flow: row nowrap;
-    gap: 20px;
+    gap: 1em;
     align-items: center;
   }
 }
@@ -124,7 +143,7 @@ export default {
 select, button {
   border: 1px solid aqua;
   display: block;
-  padding: 0.5rem 2rem;
+  padding: 0.25rem 1rem;
   margin: 0;
   text-decoration: none;
   line-height: 1;
