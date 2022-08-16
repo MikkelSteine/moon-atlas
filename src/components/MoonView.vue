@@ -37,6 +37,7 @@ const cleanMaterial = (material) => {
 }
 
 const PIx2 = Math.PI*2;
+// eslint-disable-next-line no-unused-vars
 const createCirclePoints = (radius) => {
   const curve = new THREE.EllipseCurve(
       0,  0,
@@ -78,19 +79,37 @@ const getTextureFilepath = (texture) => {
 export default {
   props: {},
   data: function() {
-return {
-    loading: false,
-    progress: 0,
-  };
-},
+    return {
+      loading: false,
+      progress: 0,
+      rotating: false,
+    };
+  },
   methods: {
     resetView () {
       this.controls.reset();
+      if (this.moon) {
+        this.moon.map(part => part.rotation.y = 0);
+      }
+      if (this.labels) {
+        this.labels.rotation.y = 0;
+      }
+    },
+    rotate(amount) {
+      if (this.moon) {
+        this.moon.map(part => part.rotation.y += amount);
+      }
+      if (this.labels) {
+        this.labels.rotation.y += amount;
+      }
     },
     setTexture (texture) {
       const textureFile = getTextureFilepath(texture);
       if (textureFile) {
         this.moonMaterial.map = this.textureLoader.load(textureFile);
+        this.moonMaterial.needsUpdate = true;
+      } else {
+        this.moonMaterial.map = null;
         this.moonMaterial.needsUpdate = true;
       }
     },
@@ -109,18 +128,27 @@ return {
       this.moonMaterial.needsUpdate = true;
       this.renderer.render(this.scene, this.camera);
     },
-    toggleLabels (on) {
-      if (on) {
-        this.camera.layers.enable(1);
-      } else {
-        this.camera.layers.disable(1);
-      }
-    },
-    toggleOutlines (on) {
-      if (on) {
-        this.camera.layers.enable(2);
-      } else {
-        this.camera.layers.disable(2);
+    toggle (what, on) {
+      switch (what) {
+        case 'labels':
+          if (on) {
+            this.camera.layers.enable(1);
+          } else {
+            this.camera.layers.disable(1);
+          }
+          break;
+        case 'outlines':
+          if (on) {
+            this.camera.layers.enable(2);
+          } else {
+            this.camera.layers.disable(2);
+          }
+          break;
+        case 'rotating':
+          this.rotating = on;
+          break;
+        default:
+          console.error('unknown toggle: ' + what);
       }
     },
     addLight(color, intensity, position, target = [0,0,0]) {
@@ -175,66 +203,26 @@ return {
     },
     createMoonMaterial() {
       this.textureLoader = new THREE.TextureLoader();
-      return new THREE.MeshPhongMaterial({
-        shininess: 0,
+      return new THREE.MeshLambertMaterial({
         emissive: 0x404040,
         emissiveIntensity: 0,
         map: this.textureLoader.load(getTextureFilepath(TEXTURE_ALBEDO))
       });
     },
     loadCraterNames() {
-      /*
-      const loader = new FontLoader();
-      loader.load( 'three/examples/fonts/helvetiker_regular.typeface.json', function ( font ) {
-        console.log(font);
-        const geometry = new THREE.TextGeometry( 'Hello three.js!', {
-          font: font,
-          size: 80,
-          height: 5,
-          curveSegments: 12,
-          bevelEnabled: true,
-          bevelThickness: 10,
-          bevelSize: 8,
-          bevelOffset: 0,
-          bevelSegments: 5
-        });
-        const material = new THREE.MeshBasicMaterial( { color: 0x004070 } );
-        const mesh = new THREE.Mesh(geometry, material);
-
-        mesh.position.setFromSphericalCoords(1760, convertCraterLat(0), convertCraterLon(0));
-        const vector = new THREE.Vector3();
-        vector.copy(mesh.position).multiplyScalar(2);
-        mesh.lookAt(vector);
-        mesh.layers.set(1);
-        this.scene.add(mesh);
-      });*/
-
-      const material = new THREE.LineBasicMaterial( { color: 0xffd000 } );
-      //const material2 = new THREE.LineBasicMaterial( { color: 0x040d0ff } );
+      //const material = new THREE.LineBasicMaterial( { color: 0xffd000 } );
 
       fetch('/json/craters.json').then(response => {
         return response.json();
       }).then(data => {
         //console.log(data);
-        this.craters = [];
+        this.labels = new THREE.Object3D();
+        this.labels.position.set(0,0,0);
         let crater;
         const vector = new THREE.Vector3();
         for (let c = 0; c < data.length; c++) {
           crater = data[c];
-          if (crater.r > 30) {
-/*            const name = crater.n;
-            const labelDiv = document.createElement('div');
-            labelDiv.className = 'label';
-            labelDiv.textContent = name;
-            const labelObj = new CSS3DObject(labelDiv);
-            labelObj.position.setFromSphericalCoords(1760, convertCraterLat(crater.lt), convertCraterLon(crater.ln));
-            const vector = new THREE.Vector3();
-            vector.copy(labelObj.position).multiplyScalar(2);
-            labelObj.lookAt(vector);
-            labelObj.layers.set(1);
-            this.craters.push(labelObj);
-            this.scene.add(labelObj);*/
-
+          if (crater.r > 40) {
             const name = crater.n;
             const labelObj = new Text();
             labelObj.text = name;
@@ -244,23 +232,28 @@ return {
             vector.copy(labelObj.position).multiplyScalar(2);
             labelObj.lookAt(vector);
             labelObj.layers.set(1);
-            this.craters.push(labelObj);
-            this.scene.add(labelObj);
+            this.labels.attach(labelObj);
 
             if (crater.t === 'Crater') {
+/*              const geometry = new THREE.RingGeometry( 1, 5, 32, 1 );
+              const line = new THREE.Line( geometry, material);
+              line.position.copy(labelObj.position);
+              line.lookAt(vector);
+              line.layers.set(1);
+              this.labels.attach(line);
+              /*
               const geometry = new THREE.BufferGeometry().setFromPoints( createCirclePoints(crater.r) );
               const line = new THREE.Line( geometry, material);
               line.position.copy(labelObj.position);
-//              console.log(line.position);
               line.position.multiplyScalar(1.02 - Math.sin(Math.atan2(crater.r, 1760)));
-//              console.log(line.position, 1 - Math.sin(Math.atan2(crater.r, 1880)));
               line.lookAt(vector);
               line.layers.set(2);
-              this.scene.add(line);
+              this.scene.add(line);*/
             }
           }
         }
-        console.log(this.craters.length);
+        this.scene.add(this.labels);
+        console.log(this.labels.children.length);
       });
     },
 
@@ -333,12 +326,11 @@ return {
     animate() {
       requestAnimationFrame(this.animate);
 
-    //  if (moon) {
-    //    moon.map(part => part.rotation.y += 0.0005);
-    //  }
+      if (this.rotating) {
+        this.rotate(0.001);
+      }
 
       this.renderer.render(this.scene, this.camera);
-      //this.labelRenderer.render(this.scene, this.camera);
     },
     updateLoadingAnimation(progress) {
       this.loading = true;
@@ -350,24 +342,25 @@ return {
     }
   },
   async mounted() {
-    this.camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 1, 20000);
+    this.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 20000);
     this.camera.position.z = 5000;
     this.camera.layers.enableAll();
+    this.camera.layers.toggle(1);
     this.camera.layers.toggle(2);
 
     this.moonMaterial = this.createMoonMaterial();
 
     this.scene = new THREE.Scene();
 
-    this.addLight(0xFFFFFF, 1, [10000, 0, 10000]);
-    this.addLight(0xFFfa80, 0.4, [-10000, 0, -10000]);
-    this.addLight(0xFFFFFF, 0.1);
+    this.lights = [];
+    this.lights.push(this.addLight(0xFFFFFF, 1, [10000, 0, 10000]));
+    this.lights.push(this.addLight(0xFFfa80, 0.4, [-10000, 0, -10000]));
+    this.lights.push(this.addLight(0xFFFFFF, 0.1));
 
     this.objLoader = new OBJLoader();
 
-    const finishedLoading = this.loadMoonModelsAtResolution('low');
-    //loadObject(scene, objLoader, 'moon1000_1.obj');
-    //loadObject(scene, objLoader, 'Low_Poly_Planet_001.obj');
+    const finishedLoading = this.loadMoonModelsAtResolution('high');
+    //const finishedLoading = new Promise(resolve => resolve());
     this.loadCraterNames();
 
     window.onresize = this.onViewResize;
@@ -377,12 +370,6 @@ return {
       this.renderer = new THREE.WebGLRenderer({antialias: true});
       this.renderer.setSize(window.innerWidth, window.innerHeight);
       this.moonview.appendChild(this.renderer.domElement);
-
-/*      this.labelRenderer = new CSS3DRenderer();
-      this.labelRenderer.setSize(window.innerWidth, window.innerHeight);
-      this.labelRenderer.domElement.style.position = 'absolute';
-      this.labelRenderer.domElement.style.top = '0';
-      this.moonview.appendChild(this.labelRenderer.domElement);*/
 
       this.controls = new OrbitControls(this.camera, this.renderer.domElement);
       this.controls.target.set(0, 0, 0);
