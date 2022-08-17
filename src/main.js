@@ -7,12 +7,13 @@ import {
     faPlay,
     faPause,
     faLayerGroup,
-    faCheck
+    faCheck,
+    faLightbulb
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import App from './App.vue'
 
-library.add(faTags, faLayerGroup, faRotateLeft, faRotateRight, faPlay, faPause, faCheck);
+library.add(faTags, faLayerGroup, faRotateLeft, faRotateRight, faPlay, faPause, faCheck, faLightbulb);
 
 createApp(App)
     .component('font-awesome-icon', FontAwesomeIcon)

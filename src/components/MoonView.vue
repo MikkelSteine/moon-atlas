@@ -127,6 +127,10 @@ export default {
             this.camera.layers.disable(2);
           }
           break;
+        case 'backlight':
+          this.lights[1].visible = on;
+          this.lights[2].visible = on;
+          break;
         case 'rotating':
           this.rotating = on;
           break;
@@ -134,13 +138,15 @@ export default {
           console.error('unknown toggle: ' + what);
       }
     },
-    addLight(color, intensity, position, target = [0,0,0]) {
+    addLight(color, intensity, on, position, target = [0,0,0]) {
       let light;
       if (!position || position.length !== 3) {
         light = new THREE.AmbientLight(color, intensity)
+        light.visible = on;
         this.scene.add(light);
       } else {
         light = new THREE.DirectionalLight(color, intensity);
+        light.visible = on;
         light.position.set(...position);
         light.target.position.set(...target);
         light.layers.enableAll();
@@ -261,7 +267,7 @@ export default {
     loadMoon100 () {
       return new Promise((resolve) => {
         let loaded = 0;
-        const total = 8;
+        const total = 1;
         for (let x = 1; x <= total; x++) {
           this.loadObject(`moon100_${x}.obj`, this.moonMaterial, this.moon, () => {
             loaded++;
@@ -338,9 +344,10 @@ export default {
     this.scene = new THREE.Scene();
 
     this.lights = [];
-    this.lights.push(this.addLight(0xFFFFFF, 1, [10000, 0, 10000]));
-    this.lights.push(this.addLight(0xFFfa80, 0.4, [-10000, 0, -10000]));
-    this.lights.push(this.addLight(0xFFFFFF, 0.1));
+    this.lights.push(this.addLight(0xFFFFFF, 1, true, [1, 0, 1]));
+    this.lights[0].castShadow = true;
+    this.lights.push(this.addLight(0xFFfa80, 0.2, false, [-1, 0, -1]));
+    this.lights.push(this.addLight(0xFFFFFF, 0.1, false));
 
     this.objLoader = new OBJLoader();
 

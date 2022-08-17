@@ -7,6 +7,9 @@
     <button @click="setProperty('labels', !labels)" class="toggle-button" :class="{on: labels}">
       <font-awesome-icon icon="fa-solid fa-tags" />
     </button>
+    <button @click="setProperty('backlight', !backlight)" class="toggle-button" :class="{on: backlight}">
+      <font-awesome-icon icon="fa-solid fa-lightbulb" />
+    </button>
     <!--
     <button @click="setProperty('outlines', !outlines)" class="toggle-button" :class="{on: outlines}">
       Outlines {{ outlines ? 'on' : 'off' }}
@@ -78,6 +81,7 @@ export default {
       rotating: false,
       layerPopup: false,
       preventBlur: false,
+      backlight: false,
     }
   },
   methods: {
