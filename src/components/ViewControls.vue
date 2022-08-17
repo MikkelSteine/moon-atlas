@@ -1,15 +1,9 @@
 <template>
   <div id="viewcontrols">
-    <button @click="resetView">Reset view</button>
+    <button @click="resetView">Reset</button>
     <!--
     <button @click="changeResolution" class="toggle-button" :class="{on: resolution}">{{resolution ? 'Low res.' : 'Higher res.'}}</button>
     -->
-    <!--<button @click="changeShininess" class="toggle-button" :class="{on: shiny}">
-      Shiny {{ shiny ? 'on' : 'off' }}
-    </button>
-    <button @click="changeFlatness" class="toggle-button" :class="{on: flat}">
-      Backlight {{ flat ? 'on' : 'off' }}
-    </button>-->
     <button @click="setProperty('labels', !labels)" class="toggle-button" :class="{on: labels}">
       <font-awesome-icon icon="fa-solid fa-tags" />
     </button>
@@ -20,8 +14,7 @@
     <button @click="rotate(-0.1)">
       <font-awesome-icon icon="fa-solid fa-rotate-right" />
     </button>
-    <button @click="setProperty('rotating', !rotating)">
-      <!--<font-awesome-icon icon="fa-solid fa-arrows-spin" />&nbsp;-->
+    <button @click="setProperty('rotating', !rotating)" class="toggle-button" :class="{on: rotating}">
       <font-awesome-icon v-if="rotating" icon="fa-solid fa-pause" />
       <font-awesome-icon v-if="!rotating" icon="fa-solid fa-play" />
     </button>
@@ -37,23 +30,11 @@
           <span>{{option.text}}</span>
         </div>
     </div>
-
-    <!--
-    <div class="group">
-      <label for="texture">Overlay:</label>
-      <select name="texture" v-model="texture">
-        <option v-for="option in optionsTexture" :value="option.value" v-bind:key=option.value>{{
-            option.text
-          }}
-        </option>
-      </select>
-    </div>-->
   </div>
 </template>
 
 <script>
 import {
-  CMD_CHANGE_MATERIAL,
   CMD_CHANGE_RESOLUTION,
   CMD_CHANGE_TEXTURE,
   CMD_RESET, CMD_ROTATE,
@@ -92,8 +73,6 @@ export default {
       popupNavPos: OPTIONS.findIndex(option => option.value === TEXTURE_ALBEDO) || 0,
       optionsTexture: OPTIONS,
       highres: false,
-      shiny: false,
-      flat: false,
       labels: false,
       outlines: false,
       rotating: false,
@@ -109,26 +88,12 @@ export default {
       this.highres = !this.highres;
       this.$emit('view-command', CMD_CHANGE_RESOLUTION, this.highres ? 'high' : 'low');
     },
-    changeShininess() {
-      this.shiny = !this.shiny;
-      this.emitUpdateMaterial();
-    },
-    changeFlatness() {
-      this.flat = !this.flat;
-      this.emitUpdateMaterial();
-    },
     rotate(direction) {
       this.$emit('view-command', CMD_ROTATE, direction);
     },
     setProperty(property, value) {
       this[property] = value;
       this.$emit('view-command', CMD_TOGGLE, property, value);
-    },
-    emitUpdateMaterial() {
-      this.$emit('view-command', CMD_CHANGE_MATERIAL, {
-        shiny: !!this.shiny,
-        flat: !!this.flat,
-      });
     },
     onSelectBlur() {
       if (!this.preventBlur)
@@ -209,136 +174,116 @@ export default {
   width: 100%;
   flex-flow: row wrap;
   justify-content: center;
-  gap: 20px;
+  gap: 0.50em;
+  padding: 0.25em 0;
 
-  .group {
+  button, .group {
     color: white;
     background: rgba(40, 40, 120, 0.6);
+    border: 1px solid rgba(180, 180, 255, 0.8);
+    border-radius: 10px;
+    box-shadow: 0 0 8px rgba(220, 240, 255, 1);
+
     font-weight: bold;
     font-family: sans-serif;
-    border: 1px solid rgba(100, 100, 255, 0.8);
-    border-radius: 10px;
-    box-shadow: 0 0 10px rgba(150, 150, 255, 1);
+    text-decoration: none;
+    font-size: 1rem;
+    text-align: center;
+    line-height: 2em;
+  }
+
+  .group {
     padding: 10px 10px;
     display: flex;
     flex-flow: row nowrap;
     gap: 1em;
     align-items: center;
   }
-}
 
-select {
-  border: 1px solid aqua;
-  display: block;
-  padding: 0.25rem 0.5rem;
-  margin: 0;
-  text-decoration: none;
-  font-size: 1rem;
-  text-align: center;
-  transition: background 250ms ease-in-out, transform 150ms ease;
+  button {
+    display: block;
+    padding: 0.25rem 1rem;
+    margin: 0;
+    min-width: 3em;
 
-  &:focus {
-    outline: 1px solid #228;
-    outline-offset: -4px;
-  }
+    transition: background 250ms ease-in-out, transform 150ms ease, box-shadow 250ms ease-in-out;
 
-  &:active {
-    transform: scale(0.99);
-  }
-}
+    &:focus {
+      outline: 1px solid #88f;
+      outline-offset: -4px;
+    }
 
-button {
-  display: block;
-  padding: 0.25rem 1rem;
-  margin: 0;
-  min-width: 3em;
+    &:active {
+      transform: scale(1, 0.9);
+    }
 
-  border: 1px solid rgba(100, 100, 255, 0.8);
-  background: rgba(40, 40, 120, 0.6);
-  color: white;
-  border-radius: 10px;
-  box-shadow: 0 0 10px rgba(150, 150, 255, 1);
+    &.toggle-button {
+      background-color: rgba(40,40,40,0.5);
+      color: #ccc;
+      outline-color: #bbb;
+      box-shadow: 0 0 1px rgba(40, 40, 180, 0.5);
 
-  font-weight: bold;
-  font-family: sans-serif;
-  text-decoration: none;
-  font-size: 1rem;
-  text-align: center;
-  line-height: 2em;
+      transition: box-shadow 250ms ease-in-out;
 
-  transition: background 250ms ease-in-out, transform 150ms ease;
+      &.on {
+        background: linear-gradient(0deg, #ccf, #88f);
+        color: white;
+        box-shadow: 0 0 8px rgba(220, 240, 255, 1);
 
-  &:focus {
-    outline: 1px solid #88f;
-    outline-offset: -4px;
-  }
-
-  &:active {
-    transform: scale(1, 0.9);
-  }
-
-  &.toggle-button {
-    background-color: rgba(40,40,40,0.5);
-    color: #b0b0b0;
-    outline-color: #bbb;
-
-    &.on {
-      background: linear-gradient(0deg, #ccf, #88f);
-      color: black;
-
-      &:focus {
-        outline-color: #888;
+        &:focus {
+          outline-color: #888;
+        }
       }
     }
+
   }
 
-}
-
-.select-popup {
-  display: flex;
-  flex-flow: column;
-  position: fixed;
-  bottom: 4em;
-  margin: 0;
-
-  font-weight: bold;
-  font-family: sans-serif;
-  text-decoration: none;
-  line-height: 1.5em;
-  font-size: 1rem;
-  text-align: left;
-
-  border: 1px solid rgba(100, 100, 255, 0.8);
-  background: rgba(40, 40, 120, 0.6);
-  color: white;
-  border-radius: 10px;
-  box-shadow: 0 0 10px rgba(150, 150, 255, 1);
-
-  div {
-    padding: 0.25rem 2rem 0.25rem 1rem;
+  .select-popup {
     display: flex;
-    flex-flow: row;
-    border-radius: 7px;
+    flex-flow: column;
+    position: fixed;
+    bottom: 4em;
+    margin: 0;
 
-    svg {
-      display: inline-block;
-      position: absolute;
-      margin: 0.25rem 0;
-    }
+    font-weight: bold;
+    font-family: sans-serif;
+    text-decoration: none;
+    line-height: 1.5em;
+    font-size: 1rem;
+    text-align: left;
 
-    span {
-      display: inline-block;
-      position: relative;
-      left: 1.25em;
-    }
+    border: 1px solid rgba(100, 100, 255, 0.8);
+    background: rgba(40, 40, 120, 0.6);
+    color: white;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(150, 150, 255, 1);
 
-    &.selected {
-      background: rgba(200,200,255,0.3);
-    }
+    div {
+      padding: 0.25rem 2rem 0.25rem 1rem;
+      display: flex;
+      flex-flow: row;
+      border-radius: 7px;
 
-    &.hover {
-      outline: 1px solid #ccf;
-      outline-offset: -2px;
+      svg {
+        display: inline-block;
+        position: absolute;
+        margin: 0.25rem 0;
+      }
+
+      span {
+        display: inline-block;
+        position: relative;
+        left: 1.25em;
+      }
+
+      &.selected {
+        background: rgba(200,200,255,0.3);
+      }
+
+      &.hover {
+        outline: 1px solid #ccf;
+        outline-offset: -2px;
+      }
     }
   }
 }

@@ -111,21 +111,6 @@ export default {
         this.moonMaterial.needsUpdate = true;
       }
     },
-    changeMaterial (options) {
-      if (options.shiny) {
-        this.moonMaterial.shininess = 30;
-      } else {
-        this.moonMaterial.shininess = 0;
-      }
-
-      if (options.flat) {
-        this.moonMaterial.emissiveIntensity = 0.4;
-      } else {
-        this.moonMaterial.emissiveIntensity = 0;
-      }
-      this.moonMaterial.needsUpdate = true;
-      this.renderer.render(this.scene, this.camera);
-    },
     toggle (what, on) {
       switch (what) {
         case 'labels':
@@ -262,6 +247,7 @@ export default {
         for (let x = 1; x <= total; x++) {
           this.loadObject(`moon20n_${x}.obj`, this.moonMaterial, this.moon, () => {
             loaded++;
+            this.renderer.render(this.scene, this.camera);
             this.updateLoadingAnimation(100 * loaded / total);
             if (loaded === total) {
               resolve();
@@ -279,6 +265,7 @@ export default {
         for (let x = 1; x <= total; x++) {
           this.loadObject(`moon100_${x}.obj`, this.moonMaterial, this.moon, () => {
             loaded++;
+            this.renderer.render(this.scene, this.camera);
             this.updateLoadingAnimation(100 * loaded / total);
             if (loaded === total) {
               resolve();
