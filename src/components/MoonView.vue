@@ -81,8 +81,8 @@ const getTextureFilepath = (texture) => {
 export default {
     props: {},
     async mounted () {
-        this.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 20000)
-        this.camera.position.z = 5000
+        this.camera = new THREE.PerspectiveCamera(10, window.innerWidth / window.innerHeight, 1, 200000)
+        this.camera.position.z = 20000
         this.camera.layers.enableAll()
         this.camera.layers.toggle(1)
         this.camera.layers.toggle(2)
