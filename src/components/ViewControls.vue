@@ -24,6 +24,17 @@
         <button @click="rotate(0.1)">
             <font-awesome-icon icon="fa-solid fa-rotate-left"/>
         </button>
+        <button @click="showNameSearch" class="toggle-button" :class="{on: searching.open}">
+            <font-awesome-icon icon="fa-solid fa-search"/>
+        </button>
+        <div class="search-popup" v-if="searching.open">
+            <div v-for="(item, index) in searching.items" v-bind:key=item @click="selectSearchResult(item)"
+                 :class="{hover: index === searching.selected}">
+                <span>{{item.n}}</span>
+            </div>
+            <div v-if="searching.tooLong"><span>&lt; Showing just first ten results &gt;</span></div>
+            <input type="text" v-model="filter" ref="searchfield" @keyup="navigateSearchResults" placeholder="[Search for crater or feature]"/>
+        </div>
         <button @blur="onSelectBlur" @focus="layerPopup=true" @keydown="navigatePopup">
             <font-awesome-icon icon="fa-solid fa-layer-group"/>
         </button>
@@ -39,9 +50,16 @@
 </template>
 
 <script>
-import { CMD_CHANGE_RESOLUTION, CMD_CHANGE_TEXTURE, CMD_RESET, CMD_ROTATE, CMD_TOGGLE } from '@/commands'
 import {
-//    TEXTURE_ALBEDO,
+    CMD_CHANGE_RESOLUTION,
+    CMD_CHANGE_TEXTURE,
+    CMD_GOTO,
+    CMD_RESET,
+    CMD_ROTATE,
+    CMD_SEARCH,
+    CMD_TOGGLE
+} from '@/commands';
+import {
     TEXTURE_ALTITUDE,
     TEXTURE_CLEMENTINECOLOR,
     TEXTURE_CRUSTTHICKNESS,
@@ -51,7 +69,7 @@ import {
     TEXTURE_ROCKTYPES,
     TEXTURE_USGS,
     TEXTURE_WATER
-} from '@/textures'
+} from '@/textures';
 
 const OPTIONS = [
     { text: '-- None --', value: '' },
@@ -65,10 +83,11 @@ const OPTIONS = [
     { text: 'USGS map', value: TEXTURE_USGS },
     { text: 'Rocktypes', value: TEXTURE_ROCKTYPES },
     { text: 'Iron distribution', value: TEXTURE_IRON },
-]
+];
 
 export default {
     name: 'ViewControls',
+    emits: ['view-command'],
     data () {
         return {
             texture: TEXTURE_REALCOLOR,
@@ -81,80 +100,144 @@ export default {
             layerPopup: false,
             preventBlur: false,
             backlight: false,
-        }
+            filter: '',
+            searching: {
+                freeze: true,
+                open: false,
+                items: [],
+                selected: 0,
+                tooLong: false,
+            },
+        };
     },
     methods: {
-        resetView () {
-            this.$emit('view-command', CMD_RESET)
+        resetView (     ) {
+            this.$emit('view-command', CMD_RESET);
+        },
+        showNameSearch () {
+            this.searching.freeze = true;
+            this.searching.open = !this.searching.open;
+            if (this.searching) {
+                this.$nextTick(() => this.$refs.searchfield.focus());
+            }
+        },
+        showFilterResults (results) {
+            if (results.length > 10) {
+                this.searching.items = results.slice(0, 10);
+                this.searching.tooLong = true;
+            } else {
+                this.searching.items = results;
+                this.searching.tooLong = false;
+            }
+            this.searching.selected = 0;
+        },
+        navigateSearchResults (event) {
+            if (event.key !== 'Enter') {
+                this.searching.freeze = false;
+            }
+            switch (event.key) {
+                case 'ArrowDown':
+                    this.searching.selected++;
+                    if (this.searching.selected >= this.searching.items.length) {
+                        this.searching.selected = 0;
+                    }
+                    break;
+                case 'ArrowUp':
+                    this.searching.selected--;
+                    if (this.searching.selected < 0) {
+                        this.searching.selected = this.searching.items.length - 1;
+                    }
+                    break;
+                case 'Enter':
+                    if (!this.searching.freeze) {
+                        this.selectSearchResult(this.searching.items[this.searching.selected]);
+                        } else {
+                        this.$nextTick(() => this.searching.freeze = false);
+                    }
+                    event.preventDefault();
+                    return false;
+                case 'Escape':
+                    this.searching.open = false;
+                    break;
+                default:
+                //console.log(event);
+            }
+        },
+        selectSearchResult (item) {
+            this.rotating = false;
+            this.$emit('view-command', CMD_TOGGLE, 'rotating', false);
+            this.searching.open = false;
+            const feature = item.data ? item.data() : item;
+            this.$emit('view-command', CMD_GOTO, feature);
         },
         changeResolution () {
-            this.highres = !this.highres
-            this.$emit('view-command', CMD_CHANGE_RESOLUTION, this.highres ? 'high' : 'low')
+            this.highres = !this.highres;
+            this.$emit('view-command', CMD_CHANGE_RESOLUTION, this.highres ? 'high' : 'low');
         },
         rotate (direction) {
-            this.$emit('view-command', CMD_ROTATE, direction)
+            this.$emit('view-command', CMD_ROTATE, direction);
         },
         setProperty (property, value) {
-            this[property] = value
-            this.$emit('view-command', CMD_TOGGLE, property, value)
+            this[property] = value;
+            this.$emit('view-command', CMD_TOGGLE, property, value);
         },
         onSelectBlur () {
             if (!this.preventBlur)
-                this.layerPopup = false
+                this.layerPopup = false;
         },
         startSelecting (texture) {
-            this.preventBlur = true
-            this.popupNavPos = this.optionsTexture.findIndex(option => option.value === texture)
+            this.preventBlur = true;
+            this.popupNavPos = this.optionsTexture.findIndex(option => option.value === texture);
             setTimeout(() => {
-                this.preventBlur = false
-            }, 4000)
+                this.preventBlur = false;
+            }, 4000);
         },
         selectLayer (texture) {
-            const selectedTexture = this.optionsTexture.findIndex(option => option.value === texture)
+            const selectedTexture = this.optionsTexture.findIndex(option => option.value === texture);
             if (selectedTexture === this.popupNavPos) {
-                this.texture = texture
-                this.layerPopup = false
+                this.texture = texture;
+                this.layerPopup = false;
             }
-            this.preventBlur = false
+            this.preventBlur = false;
         },
         navigatePopup (event) {
             switch (event.key) {
                 case 'ArrowDown':
-                    this.layerPopup = true
-                    this.popupNavPos++
+                    this.layerPopup = true;
+                    this.popupNavPos++;
                     if (this.popupNavPos >= this.optionsTexture.length) {
-                        this.popupNavPos = 0
+                        this.popupNavPos = 0;
                     }
-                    break
+                    break;
                 case 'ArrowUp':
-                    this.layerPopup = true
-                    this.popupNavPos--
+                    this.layerPopup = true;
+                    this.popupNavPos--;
                     if (this.popupNavPos < 0) {
-                        this.popupNavPos = this.optionsTexture.length - 1
+                        this.popupNavPos = this.optionsTexture.length - 1;
                     }
-                    break
+                    break;
                 case 'Enter':
                     if (this.layerPopup) {
-                        this.texture = this.optionsTexture[this.popupNavPos].value
-                        this.layerPopup = false
-                        event.preventDefault()
-                        return false
+                        this.texture = this.optionsTexture[this.popupNavPos].value;
+                        this.layerPopup = false;
+                        event.preventDefault();
+                        return false;
                     } else {
-                        this.layerPopup = true
-                        event.preventDefault()
-                        return false
+                        this.layerPopup = true;
+                        event.preventDefault();
+                        return false;
                     }
                 case ' ':
                     if (this.layerPopup) {
-                        this.texture = this.optionsTexture[this.popupNavPos].value
-                        event.preventDefault()
-                        return false
+                        this.texture = this.optionsTexture[this.popupNavPos].value;
+                        event.preventDefault();
+                        return false;
                     }
-                    break
+                    break;
                 case 'Escape':
-                    this.popupNavPos = this.optionsTexture.findIndex(option => option.value === this.texture)
-                    this.layerPopup = false
-                    break
+                    this.popupNavPos = this.optionsTexture.findIndex(option => option.value === this.texture);
+                    this.layerPopup = false;
+                    break;
                 default:
                 //console.log(event);
             }
@@ -162,10 +245,13 @@ export default {
     },
     watch: {
         texture (value) {
-            this.$emit('view-command', CMD_CHANGE_TEXTURE, value)
+            this.$emit('view-command', CMD_CHANGE_TEXTURE, value);
+        },
+        filter (value) {
+            this.$emit('view-command', CMD_SEARCH, value);
         }
     }
-}
+};
 </script>
 
 <style scoped lang="less">
@@ -239,6 +325,50 @@ export default {
             }
         }
 
+    }
+
+
+    .search-popup {
+        display: flex;
+        flex-flow: column;
+        position: fixed;
+        bottom: 4em;
+        margin: 0;
+
+        font-weight: bold;
+        font-family: sans-serif;
+        text-decoration: none;
+        line-height: 1.5em;
+        font-size: 1rem;
+        text-align: left;
+
+        border: 1px solid rgba(100, 100, 255, 0.8);
+        background: rgba(40, 40, 120, 0.6);
+        color: white;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(150, 150, 255, 1);
+
+        > input {
+            font-size: 1.6em;
+            min-width: 400px;
+            line-height: 1.6em;
+            background: rgba(40, 40, 80, 0.6);
+            color: white;
+            padding: 0 0.5em
+        }
+
+
+        div {
+            padding: 0.25rem 1rem;
+            display: flex;
+            flex-flow: row;
+            border-radius: 7px;
+
+            &.hover {
+                outline: 1px solid #ccf;
+                outline-offset: -2px;
+            }
+        }
     }
 
     .select-popup {
