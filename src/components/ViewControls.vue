@@ -41,7 +41,7 @@
 <script>
 import { CMD_CHANGE_RESOLUTION, CMD_CHANGE_TEXTURE, CMD_RESET, CMD_ROTATE, CMD_TOGGLE } from '@/commands'
 import {
-    TEXTURE_ALBEDO,
+//    TEXTURE_ALBEDO,
     TEXTURE_ALTITUDE,
     TEXTURE_CLEMENTINECOLOR,
     TEXTURE_CRUSTTHICKNESS,
@@ -55,11 +55,11 @@ import {
 
 const OPTIONS = [
     { text: '-- None --', value: '' },
-    { text: 'Albedo', value: TEXTURE_ALBEDO },
+    { text: 'Real colors', value: TEXTURE_REALCOLOR },
+//    { text: 'Albedo', value: TEXTURE_ALBEDO },
     { text: 'Altitude', value: TEXTURE_ALTITUDE },
-    { text: 'Crustal thickness', value: TEXTURE_CRUSTTHICKNESS },
-    { text: '"Real" color', value: TEXTURE_REALCOLOR },
     { text: 'Clementine false color', value: TEXTURE_CLEMENTINECOLOR },
+    { text: 'Crustal thickness', value: TEXTURE_CRUSTTHICKNESS },
     { text: 'Water concentration', value: TEXTURE_WATER },
     { text: 'Geological map', value: TEXTURE_GEOLOGICAL },
     { text: 'USGS map', value: TEXTURE_USGS },
@@ -71,8 +71,8 @@ export default {
     name: 'ViewControls',
     data () {
         return {
-            texture: TEXTURE_ALBEDO,
-            popupNavPos: OPTIONS.findIndex(option => option.value === TEXTURE_ALBEDO) || 0,
+            texture: TEXTURE_REALCOLOR,
+            popupNavPos: OPTIONS.findIndex(option => option.value === TEXTURE_REALCOLOR) || 0,
             optionsTexture: OPTIONS,
             highres: false,
             labels: false,

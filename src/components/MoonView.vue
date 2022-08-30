@@ -10,7 +10,7 @@ import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js'
 import {
-    TEXTURE_ALBEDO,
+//    TEXTURE_ALBEDO,
     TEXTURE_ALTITUDE,
     TEXTURE_CLEMENTINECOLOR,
     TEXTURE_CRUSTTHICKNESS,
@@ -53,12 +53,13 @@ const createCirclePoints = (radius) => {
 
 const getTextureFilepath = (texture) => {
     switch (texture) {
-        case TEXTURE_ALBEDO:
-            return '/textures/moon-albedo.png'
+//        case TEXTURE_ALBEDO:
+//            return '/textures/moon-albedo.png'
         case TEXTURE_REALCOLOR:
-            return '/textures/moon-realcolors.jpeg'
+//            return '/textures/moon-realcolors.jpeg'
+            return '/textures/lroc_color_poles.jpg'
         case TEXTURE_CLEMENTINECOLOR:
-            return '/textures/moon-clementinecolors.jpeg'
+            return '/textures/moon-clementine-full.jpeg'
         case TEXTURE_WATER:
             return '/textures/moon-water.jpeg'
         case TEXTURE_ROCKTYPES:
@@ -113,6 +114,8 @@ export default {
 
             this.controls = new OrbitControls(this.camera, this.renderer.domElement)
             this.controls.target.set(0, 0, 0)
+            this.controls.minDistance = 2000;
+            this.controls.maxDistance = 100000;
             this.controls.update()
 
             this.renderer.render(this.scene, this.camera)
@@ -148,7 +151,12 @@ export default {
         setTexture (texture) {
             const textureFile = getTextureFilepath(texture)
             if (textureFile) {
-                this.moonMaterial.map = this.textureLoader.load(textureFile)
+                this.moonMaterial.map = this.textureLoader.load(textureFile/*, () => {
+                    this.loadingDone();
+                }, (event) => {
+                    console.log(event);
+                    this.updateLoadingAnimation(event.progress / event.total);
+                }*/);
                 this.moonMaterial.needsUpdate = true
             } else {
                 this.moonMaterial.map = null
@@ -242,7 +250,7 @@ export default {
             return new THREE.MeshLambertMaterial({
                 emissive: 0x404040,
                 emissiveIntensity: 0,
-                map: this.textureLoader.load(getTextureFilepath(TEXTURE_ALBEDO))
+                map: this.textureLoader.load(getTextureFilepath(TEXTURE_REALCOLOR))
             })
         },
         loadCraterNames () {
@@ -289,7 +297,7 @@ export default {
                     }
                 }
                 this.scene.add(this.labels)
-                console.log(this.labels.children.length)
+//                console.log(this.labels.children.length)
             })
         },
 
