@@ -10,7 +10,6 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
 import {
-//    TEXTURE_ALBEDO,
     TEXTURE_ALTITUDE,
     TEXTURE_CLEMENTINECOLOR,
     TEXTURE_CRUSTTHICKNESS,
@@ -90,9 +89,12 @@ export default {
         this.camera = new THREE.PerspectiveCamera(10, window.innerWidth / window.innerHeight, 1, 200000);
         this.camera.position.z = 20000;
         this.camera.layers.enableAll();
-        this.camera.layers.toggle(1);
-        this.camera.layers.toggle(2);
-        this.camera.layers.toggle(3);
+        this.camera.layers.disable(1);
+        this.camera.layers.disable(2);
+        this.camera.layers.disable(3);
+        this.camera.layers.enable(4);
+        this.camera.layers.disable(5);
+        this.camera.layers.disable(6);
 
         this.moonMaterial = this.createMoonMaterial();
 
@@ -105,8 +107,9 @@ export default {
 
         this.objLoader = new OBJLoader();
 
-        const finishedLoading = this.loadMoonModelsAtResolution('low');
-        //const finishedLoading = new Promise(resolve => resolve());
+        this.rotation = 0;
+
+        const finishedLoading = this.loadMoonModels();
         this.loadCraterNames();
 
         window.onresize = this.onViewResize;
@@ -122,6 +125,20 @@ export default {
             this.controls.minDistance = 2000;
             this.controls.maxDistance = 100000;
             this.controls.update();
+            this.controls.addEventListener('change', () => {
+                const distance = this.controls.getDistance();
+                if (distance <= 20000) {
+                    if (this.moon.high.loaded) {
+                        this.camera.layers.disable(4);
+                        this.camera.layers.disable(5);
+                        this.camera.layers.enable(6);
+                    }
+                } else {
+                    this.camera.layers.disable(6);
+                    this.camera.layers.enable(5);
+                }
+//                console.log(distance, this.camera.layers);
+            });
 
             this.renderer.render(this.scene, this.camera);
 
@@ -130,6 +147,7 @@ export default {
     },
     data: function () {
         return {
+            resolution: 'low',
             loading: false,
             progress: 0,
             rotating: false,
@@ -139,7 +157,9 @@ export default {
         resetRotation () {
             this.rotating = false;
             if (this.moon) {
-                this.moon.map(part => part.rotation.y = 0);
+                this.moon.initial.data.map(part => part.rotation.y = 0);
+                this.moon.low.data.map(part => part.rotation.y = 0);
+                this.moon.high.data.map(part => part.rotation.y = 0);
             }
             if (this.labels) {
                 this.labels.rotation.y = 0;
@@ -154,11 +174,14 @@ export default {
             this.resetLights();
         },
         rotate (amount) {
+            this.rotation += amount;
             if (this.moon) {
-                this.moon.map(part => part.rotation.y += amount);
+                this.moon.initial.data.map(part => part.rotation.y = this.rotation);
+                this.moon.low.data.map(part => part.rotation.y = this.rotation);
+                this.moon.high.data.map(part => part.rotation.y = this.rotation);
             }
             if (this.labels) {
-                this.labels.rotation.y += amount;
+                this.labels.rotation.y = this.rotation;
             }
         },
         setTexture (texture) {
@@ -215,7 +238,7 @@ export default {
             this.resetRotation();
 
             this.camera.position.setFromSphericalCoords(this.controls.getDistance(), feature.lt, feature.ln);
-            this.lightsSun.position.setFromSphericalCoords(1,  Math.PI/2, feature.ln + Math.PI/6);
+            this.lightsSun.position.setFromSphericalCoords(1, Math.PI / 2, feature.ln + Math.PI / 6);
 
             this.searchLabel.text = name;
             this.searchLabel.color = feature.t === 'Crater' ? 0xffffc0 : 0xc0d0ff;
@@ -265,37 +288,63 @@ export default {
             return light;
         },
 
-        reloadMoonModelsAtResolution (resolution) {
-            if (this.moon && this.moon.length > 0) {
-                const scene = this.scene;
-                this.moon.forEach((object) => {
-                    object.traverse(function (child) {
-                        if (!child.isMesh) return;
-                        scene.remove(child);
-                        child.geometry.dispose();
-                        /*            if (child.material.isMaterial) {
-                                      cleanMaterial(child)
-                                    } else {
-                                      // an array of materials
-                                      for (const material of child.material) cleanMaterial(material)
-                                    }*/
-                        child.geometry = undefined;
-                        child = undefined;
-                    });
-                    this.scene.remove(object);
-                    object = undefined;
-                });
-            }
-            this.loadMoonModelsAtResolution(resolution);
-        },
-        loadMoonModelsAtResolution (resolution) {
-            this.moon = [];
-            return new Promise((resolve) => {
-                if (resolution === 'high') {
-                    this.loadMoon20normal(this.moonMaterial, this.moon).then(resolve);
-                } else {
-                    this.loadMoon100(this.moonMaterial, this.moon).then(resolve);
+        /*        reloadMoonModelsAtResolution (resolution) {
+                    if (this.moon && this.moon.length > 0) {
+                        const scene = this.scene;
+                        this.moon.forEach((object) => {
+                            object.traverse(function (child) {
+                                if (!child.isMesh) return;
+                                scene.remove(child);
+                                child.geometry.dispose();
+                                            if (child.material.isMaterial) {
+                                              cleanMaterial(child)
+                                            } else {
+                                              // an array of materials
+                                              for (const material of child.material) cleanMaterial(material)
+                                            }
+                                child.geometry = undefined;
+                                child = undefined;
+                            });
+                            this.scene.remove(object);
+                            object = undefined;
+                        });
+                    }
+                    this.loadMoonModel(resolution);
+                },*/
+
+        loadMoonModels () {
+            this.moon = {
+                initial: {
+                    loaded: false,
+                    data: []
+                },
+                low: {
+                    loaded: false,
+                    data: []
+                },
+                high: {
+                    loaded: false,
+                    data: []
                 }
+            };
+
+            return new Promise((resolve) => {
+                setTimeout(() => {
+                    this.loadMoonModelsAtResolution(this.moonMaterial, this.moon.high.data, 'moon20n', 21, 6)
+                        .then(() => {
+                            this.moon.high.loaded = true;
+                            this.camera.layers.disable(4);
+                            this.camera.layers.disable(5);
+                            this.camera.layers.enable(6);
+                        })
+                        .then(resolve);
+                }, 100);
+
+                this.loadMoonModelsAtResolution(this.moonMaterial, this.moon.initial.data, 'moon1000', 1, 4)
+                    .then(() => { this.moon.initial.loaded = true; });
+                this.loadMoonModelsAtResolution(this.moonMaterial, this.moon.low.data, 'moon100', 6, 5)
+                    .then(() => { this.moon.low.loaded = true; })
+                    .then(() => { this.camera.layers.disable(4); this.camera.layers.enable(5); });
             });
         },
         createMoonMaterial () {
@@ -325,7 +374,7 @@ export default {
                 this.searchLabel = new Text();
                 this.searchLabel.fontSize = 20;
                 this.searchLabel.layers.set(3);
-                this.searchLabel.position.setFromSphericalCoords(1780, Math.PI/2, 0);
+                this.searchLabel.position.setFromSphericalCoords(1780, Math.PI / 2, 0);
                 this.labels.attach(this.searchLabel);
 
                 for (let c = 0; c < data.length; c++) {
@@ -366,42 +415,26 @@ export default {
             });
         },
 
-        loadMoon20normal () {
+        loadMoonModelsAtResolution (material, models, prefix, total, layer) {
             return new Promise((resolve) => {
                 let loaded = 0;
-                const total = 21;
                 for (let x = 1; x <= total; x++) {
-                    this.loadObject(`moon20n_${x}.obj`, this.moonMaterial, this.moon, () => {
+                    this.loadObject(`${prefix}_${x}.obj`, material, models, layer, () => {
                         loaded++;
-                        this.renderer.render(this.scene, this.camera);
-                        this.updateLoadingAnimation(100 * loaded / total);
+                        if (prefix === 'moon20n') {
+                            this.renderer.render(this.scene, this.camera);
+                            this.updateLoadingAnimation(100 * loaded / total);
+                        }
                         if (loaded === total) {
                             resolve();
                         }
                     });
                 }
             });
+
         },
 
-// eslint-disable-next-line no-unused-vars
-        loadMoon100 () {
-            return new Promise((resolve) => {
-                let loaded = 0;
-                const total = 6;
-                for (let x = 1; x <= total; x++) {
-                    this.loadObject(`moon100_${x}.obj`, this.moonMaterial, this.moon, () => {
-                        loaded++;
-                        this.renderer.render(this.scene, this.camera);
-                        this.updateLoadingAnimation(100 * loaded / total);
-                        if (loaded === total) {
-                            resolve();
-                        }
-                    });
-                }
-            });
-        },
-
-        loadObject (fileName, material, loadTo, cb) {
+        loadObject (fileName, material, loadTo, layer, cb) {
             this.objLoader.load(
                 '/obj/' + fileName,
                 (object) => {
@@ -410,8 +443,12 @@ export default {
                             child.material = material;
                             child.material.needsUpdate = true;
                         }
+                        if (layer) {
+                            child.layers.set(layer);
+                        } else {
+                            child.layers.enableAll();
+                        }
                     });
-                    object.layers.enableAll();
                     object.scale.set(100, 100, 100);
                     this.scene.add(object);
                     if (loadTo) {
@@ -480,7 +517,7 @@ export default {
     padding: 10px 20px;
     display: none;
     position: fixed;
-    top: 50%;
+    bottom: 60px;
     left: 50%;
     margin: -18px 0 0 -161px;
     width: 300px;
