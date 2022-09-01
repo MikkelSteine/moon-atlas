@@ -238,6 +238,7 @@ export default {
         },
         hightlightFeature (feature) {
             this.resetRotation();
+            this.controls.target.set(0, 0, 0);
 
             this.camera.position.setFromSphericalCoords(this.controls.getDistance(), feature.lt, feature.ln + this.rotation);
             this.lightsSun.position.setFromSphericalCoords(1, Math.PI / 2, feature.ln + this.rotation + Math.PI / 6);
