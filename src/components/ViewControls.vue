@@ -30,7 +30,7 @@
         <div class="search-popup" v-if="searching.open">
             <div v-for="(item, index) in searching.items" v-bind:key=item @click="selectSearchResult(item)"
                  :class="{hover: index === searching.selected}">
-                <span>{{item.n}}</span>
+                <span>{{item.n}} [{{item.t}}] {{item.r * 2}}km</span>
             </div>
             <div v-if="searching.tooLong"><span>&lt; Showing just first ten results &gt;</span></div>
             <input type="text" v-model="filter" ref="searchfield" @keyup="navigateSearchResults" placeholder="[Search for crater or feature]"/>

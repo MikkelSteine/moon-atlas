@@ -134,8 +134,10 @@ export default {
                         this.camera.layers.enable(6);
                     }
                 } else {
-                    this.camera.layers.disable(6);
-                    this.camera.layers.enable(5);
+                    if (this.moon.low.loaded) {
+                        this.camera.layers.disable(6);
+                        this.camera.layers.enable(5);
+                    }
                 }
 //                console.log(distance, this.camera.layers);
             });
@@ -157,12 +159,12 @@ export default {
         resetRotation () {
             this.rotating = false;
             if (this.moon) {
-                this.moon.initial.data.map(part => part.rotation.y = 0);
-                this.moon.low.data.map(part => part.rotation.y = 0);
-                this.moon.high.data.map(part => part.rotation.y = 0);
+                this.moon.initial.data.map(part => part.rotation.y = this.rotation);
+                this.moon.low.data.map(part => part.rotation.y = this.rotation);
+                this.moon.high.data.map(part => part.rotation.y = this.rotation);
             }
             if (this.labels) {
-                this.labels.rotation.y = 0;
+                this.labels.rotation.y = this.rotation;
             }
         },
         resetLights () {
@@ -237,16 +239,17 @@ export default {
         hightlightFeature (feature) {
             this.resetRotation();
 
-            this.camera.position.setFromSphericalCoords(this.controls.getDistance(), feature.lt, feature.ln);
-            this.lightsSun.position.setFromSphericalCoords(1, Math.PI / 2, feature.ln + Math.PI / 6);
+            this.camera.position.setFromSphericalCoords(this.controls.getDistance(), feature.lt, feature.ln + this.rotation);
+            this.lightsSun.position.setFromSphericalCoords(1, Math.PI / 2, feature.ln + this.rotation + Math.PI / 6);
 
             this.searchLabel.text = name;
             this.searchLabel.color = feature.t === 'Crater' ? 0xffffc0 : 0xc0d0ff;
 
-            this.searchLabel.position.setFromSphericalCoords(1760, feature.lt, feature.ln);
+            this.searchLabel.position.setFromSphericalCoords(1780, feature.lt, feature.ln);
             const vector = new THREE.Vector3();
             vector.copy(this.searchLabel.position).multiplyScalar(2);
             this.searchLabel.lookAt(vector);
+            this.searchLabel.rotation.y = this.rotation;
 
             this.camera.layers.enable(3);
 
@@ -328,6 +331,9 @@ export default {
                 }
             };
 
+            this.loadMoonModelsAtResolution(this.moonMaterial, this.moon.initial.data, 'moon1000', 1, 4)
+                .then(() => { this.moon.initial.loaded = true; });
+
             return new Promise((resolve) => {
                 setTimeout(() => {
                     this.loadMoonModelsAtResolution(this.moonMaterial, this.moon.high.data, 'moon20n', 21, 6)
@@ -338,13 +344,16 @@ export default {
                             this.camera.layers.enable(6);
                         })
                         .then(resolve);
-                }, 100);
+                }, 10000);
 
-                this.loadMoonModelsAtResolution(this.moonMaterial, this.moon.initial.data, 'moon1000', 1, 4)
-                    .then(() => { this.moon.initial.loaded = true; });
-                this.loadMoonModelsAtResolution(this.moonMaterial, this.moon.low.data, 'moon100', 6, 5)
-                    .then(() => { this.moon.low.loaded = true; })
-                    .then(() => { this.camera.layers.disable(4); this.camera.layers.enable(5); });
+                setTimeout(() => {
+                    this.loadMoonModelsAtResolution(this.moonMaterial, this.moon.low.data, 'moon100', 6, 5)
+                        .then(() => {
+                            this.moon.low.loaded = true;
+                            this.camera.layers.disable(4);
+                            this.camera.layers.enable(5);
+                        });
+                }, 100);
             });
         },
         createMoonMaterial () {
@@ -444,6 +453,7 @@ export default {
                             child.material.needsUpdate = true;
                         }
                         if (layer) {
+//                            console.log(layer, fileName);
                             child.layers.set(layer);
                         } else {
                             child.layers.enableAll();
