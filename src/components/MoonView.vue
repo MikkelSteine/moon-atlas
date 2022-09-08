@@ -92,7 +92,7 @@ export default {
         this.camera.layers.disable(1);
         this.camera.layers.disable(2);
         this.camera.layers.disable(3);
-        this.camera.layers.enable(4);
+//        this.camera.layers.enable(4);
         this.camera.layers.disable(5);
         this.camera.layers.disable(6);
 
@@ -125,24 +125,9 @@ export default {
             this.controls.minDistance = 2000;
             this.controls.maxDistance = 100000;
             this.controls.update();
-            this.controls.addEventListener('change', () => {
-                const distance = this.controls.getDistance();
-                if (distance <= 20000) {
-                    if (this.moon.high.loaded) {
-                        this.camera.layers.disable(4);
-                        this.camera.layers.disable(5);
-                        this.camera.layers.enable(6);
-                    }
-                } else {
-                    if (this.moon.low.loaded) {
-                        this.camera.layers.disable(6);
-                        this.camera.layers.enable(5);
-                    }
-                }
-//                console.log(distance, this.camera.layers);
-            });
+            this.controls.addEventListener('change', this.setVisibleModel);
 
-            this.renderer.render(this.scene, this.camera);
+            this.animate();
 
             finishedLoading.then(this.loadingDone);
         }
@@ -316,6 +301,28 @@ export default {
                     this.loadMoonModel(resolution);
                 },*/
 
+        setVisibleModel () {
+            const distance = this.controls.getDistance();
+            if (distance <= 20000) {
+                if (this.moon.high.loaded) {
+                    this.camera.layers.disable(4);
+                    this.camera.layers.disable(5);
+                    this.camera.layers.enable(6);
+                }
+            } else if (distance > 40000) {
+                if (this.moon.initial.loaded) {
+                    this.camera.layers.enable(4);
+                    this.camera.layers.disable(5);
+                }
+            } else {
+                if (this.moon.low.loaded) {
+                    this.camera.layers.disable(6);
+                    this.camera.layers.disable(4);
+                    this.camera.layers.enable(5);
+                }
+            }
+            console.log(distance, this.camera.layers);
+        },
         loadMoonModels () {
             this.moon = {
                 initial: {
@@ -332,11 +339,14 @@ export default {
                 }
             };
 
-            this.loadMoonModelsAtResolution(this.moonMaterial, this.moon.initial.data, 'moon1000', 1, 4)
-                .then(() => { this.moon.initial.loaded = true; });
-
             return new Promise((resolve) => {
-                setTimeout(() => {
+                this.loadMoonModelsAtResolution(this.moonMaterial, this.moon.initial.data, 'moon1000', 1, 4)
+                    .then(() => {
+                        this.moon.initial.loaded = true;
+                        this.render();
+                    });
+
+/*                setTimeout(() => {
                     this.loadMoonModelsAtResolution(this.moonMaterial, this.moon.high.data, 'moon20n', 21, 6)
                         .then(() => {
                             this.moon.high.loaded = true;
@@ -345,7 +355,7 @@ export default {
                             this.camera.layers.enable(6);
                         })
                         .then(resolve);
-                }, 10000);
+                }, 10000);*/
 
                 setTimeout(() => {
                     this.loadMoonModelsAtResolution(this.moonMaterial, this.moon.low.data, 'moon100', 6, 5)
@@ -353,7 +363,8 @@ export default {
                             this.moon.low.loaded = true;
                             this.camera.layers.disable(4);
                             this.camera.layers.enable(5);
-                        });
+                        })
+                        .then(resolve);
                 }, 100);
             });
         },
@@ -431,8 +442,8 @@ export default {
                 for (let x = 1; x <= total; x++) {
                     this.loadObject(`${prefix}_${x}.obj`, material, models, layer, () => {
                         loaded++;
-                        if (prefix === 'moon20n') {
-                            this.renderer.render(this.scene, this.camera);
+                        if (prefix === 'moon100') {
+                            this.render();
                             this.updateLoadingAnimation(100 * loaded / total);
                         }
                         if (loaded === total) {
@@ -454,7 +465,7 @@ export default {
                             child.material.needsUpdate = true;
                         }
                         if (layer) {
-//                            console.log(layer, fileName);
+                            console.log(layer, fileName);
                             child.layers.set(layer);
                         } else {
                             child.layers.enableAll();
@@ -476,6 +487,9 @@ export default {
             this.renderer.setSize(window.innerWidth, window.innerHeight);
             this.camera.aspect = window.innerWidth / window.innerHeight;
             this.camera.updateProjectionMatrix();
+            this.render();
+        },
+        render () {
             this.renderer.render(this.scene, this.camera);
         },
         animate () {
@@ -485,14 +499,13 @@ export default {
                 this.rotate(0.001);
             }
 
-            this.renderer.render(this.scene, this.camera);
+            this.render();
         },
         updateLoadingAnimation (progress) {
             this.loading = true;
             this.progress = progress;
         },
         loadingDone () {
-            this.animate();
             this.loading = false;
         }
     }
