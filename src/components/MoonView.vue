@@ -321,7 +321,7 @@ export default {
                     this.camera.layers.enable(5);
                 }
             }
-            console.log(distance, this.camera.layers);
+//            console.log(distance, this.camera.layers);
         },
         loadMoonModels () {
             this.moon = {
@@ -465,7 +465,7 @@ export default {
                             child.material.needsUpdate = true;
                         }
                         if (layer) {
-                            console.log(layer, fileName);
+//                            console.log(layer, fileName);
                             child.layers.set(layer);
                         } else {
                             child.layers.enableAll();
